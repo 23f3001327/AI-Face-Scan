@@ -256,7 +256,7 @@
         <span class="step-icon">📊</span> Extracting skin biomarkers
       </div>
     </div>
-    <div class="loading-sub">This takes 5–10 seconds</div>
+    <div class="loading-sub">This may take 15–30 seconds on free hosting</div>
   </div>
 
   <script>
@@ -301,7 +301,28 @@
         await animateStep('step-lighting', 'step-model', 1200);
         await animateStep('step-model', 'step-biomarkers', 1200);
 
-        const resp = await fetch(`${API}/api/analyze`, { method: 'POST', body: formData });
+        // Use a generous timeout — free-tier servers can be slow on first load
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes
+
+        let resp;
+        try {
+          resp = await fetch(`${API}/api/analyze`, {
+            method: 'POST', body: formData, signal: controller.signal
+          });
+        } catch (fetchErr) {
+          // If first attempt times out or fails, retry once
+          clearTimeout(timeoutId);
+          document.querySelector('.loading-sub').textContent = 'Server is waking up… retrying (this is normal for free hosting)';
+          const controller2 = new AbortController();
+          const timeoutId2 = setTimeout(() => controller2.abort(), 120000);
+          resp = await fetch(`${API}/api/analyze`, {
+            method: 'POST', body: formData, signal: controller2.signal
+          });
+          clearTimeout(timeoutId2);
+        }
+        clearTimeout(timeoutId);
+
         if (!resp.ok) {
           const err = await resp.json();
           throw new Error(err.detail || 'Analysis failed');

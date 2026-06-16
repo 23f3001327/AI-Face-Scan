@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -30,37 +31,53 @@ LABEL_MAP_PATH = BASE_DIR / "label_map.json"
 TREE_PATH      = BASE_DIR / "question_tree.json"
 FRONTEND_DIR   = BASE_DIR.parent / "frontend"
 
-# ── lazy-load heavy dependencies ──────────────────────────────────────────────
+# ── model holders (loaded at startup, not lazily) ─────────────────────────────
 _face_model    = None
 _question_eng  = None
 
 def get_face_model():
     global _face_model
     if _face_model is None:
-        from cv_model import FaceScanModel
-        if not MODEL_PATH.exists():
-            raise HTTPException(
-                status_code=503,
-                detail=(
-                    "Model weights not found. "
-                    "Please place efficientnet_best.pt inside backend/models/."
-                ),
-            )
-        _face_model = FaceScanModel(str(MODEL_PATH), str(LABEL_MAP_PATH))
+        raise HTTPException(status_code=503, detail="Model is still loading, please retry in a moment.")
     return _face_model
 
 def get_question_engine():
     global _question_eng
     if _question_eng is None:
-        from question_engine import QuestionEngine
-        _question_eng = QuestionEngine(str(TREE_PATH))
+        raise HTTPException(status_code=503, detail="Question engine is still loading.")
     return _question_eng
+
+
+@asynccontextmanager
+async def lifespan(app):
+    """Load heavy ML models at startup so requests don't time out."""
+    global _face_model, _question_eng
+
+    # ── Load question engine (fast) ───────────────────────────────────────
+    from question_engine import QuestionEngine
+    _question_eng = QuestionEngine(str(TREE_PATH))
+    logger.info("✅ QuestionEngine loaded")
+
+    # ── Load face model (slow — PyTorch + weights) ────────────────────────
+    if MODEL_PATH.exists():
+        from cv_model import FaceScanModel
+        _face_model = FaceScanModel(str(MODEL_PATH), str(LABEL_MAP_PATH))
+        logger.info("✅ FaceScanModel loaded on startup")
+    else:
+        logger.warning("⚠️ Model weights not found at %s", MODEL_PATH)
+
+    yield  # app runs here
+
+    # cleanup (nothing needed)
+    logger.info("Shutting down AyurGenX")
+
 
 # ── app ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="AyurGenX API",
     description="AI-powered Ayurvedic health assessment with face scanning",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
