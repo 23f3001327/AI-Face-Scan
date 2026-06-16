@@ -6,8 +6,13 @@ Serves both the REST API and the static frontend.
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+# Add backend directory to sys.path so we can import cv_model directly.
+# This fixes both FastAPI imports and PyTorch's torch.load() unpickling path.
+sys.path.append(str(Path(__file__).parent))
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
