@@ -1,0 +1,20 @@
+{
+  "classes": [
+    "Redness", "acne", "blackheads", "dark spots",
+    "inflammatory acne", "non inflammatory acne black heads",
+    "non inflammatory acne white heads", "pigmentation",
+    "pores", "wrinkles"
+  ],
+  "class_to_idx": {
+    "Redness": 0, "acne": 1, "blackheads": 2, "dark spots": 3,
+    "inflammatory acne": 4, "non inflammatory acne black heads": 5,
+    "non inflammatory acne white heads": 6, "pigmentation": 7,
+    "pores": 8, "wrinkles": 9
+  },
+  "idx_to_class": {
+    "0": "Redness", "1": "acne", "2": "blackheads", "3": "dark spots",
+    "4": "inflammatory acne", "5": "non inflammatory acne black heads",
+    "6": "non inflammatory acne white heads", "7": "pigmentation",
+    "8": "pores", "9": "wrinkles"
+  }
+}

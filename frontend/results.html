@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AyurGenX — Your Ayurvedic Health Profile</title>
+  <meta name="description" content="Your personalised Ayurvedic health assessment results — skin conditions, dosha profile, and tailored wellness recommendations." />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    .results-page { flex: 1; padding: 100px 24px 80px; }
+    .results-inner { max-width: 960px; margin: 0 auto; }
+
+    /* ── Hero banner ─────────────────────────────────────────── */
+    .results-hero {
+      text-align: center; margin-bottom: 56px;
+    }
+    .results-hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      margin-bottom: 14px;
+    }
+    .results-hero p { color: rgba(255,255,255,0.6); font-size: 1.05rem; }
+
+    /* ── Dosha hero card ─────────────────────────────────────── */
+    .dosha-hero {
+      padding: 40px 36px;
+      display: flex; align-items: center; gap: 40px;
+      margin-bottom: 36px;
+      background: linear-gradient(135deg,
+        rgba(244,166,41,0.12) 0%,
+        rgba(45,158,85,0.1)  100%);
+      border: 1px solid rgba(244,166,41,0.3);
+    }
+    .dosha-emblem {
+      width: 110px; height: 110px; flex-shrink: 0;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold-400), var(--green-500));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem;
+      box-shadow: 0 0 40px rgba(244,166,41,0.3);
+    }
+    .dosha-info h2 {
+      font-family: var(--font-display);
+      font-size: 2rem; margin-bottom: 6px;
+    }
+    .dosha-info p { color: rgba(255,255,255,0.65); font-size: 0.95rem; line-height: 1.7; }
+    .dosha-tags { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+    /* ── Two-column grid ─────────────────────────────────────── */
+    .results-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 24px; margin-bottom: 36px;
+    }
+
+    /* ── Section card ────────────────────────────────────────── */
+    .result-card { padding: 28px; }
+    .result-card-title {
+      font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: rgba(255,255,255,0.4); margin-bottom: 20px;
+    }
+
+    /* ── Condition list ──────────────────────────────────────── */
+    .condition-list { display: flex; flex-direction: column; gap: 12px; }
+    .cond-row {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .cond-name { flex: 1; font-size: 0.9rem; font-weight: 500; }
+    .cond-bar-wrap {
+      flex: 2; height: 6px; background: rgba(255,255,255,0.1);
+      border-radius: 3px; overflow: hidden;
+    }
+    .cond-bar {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(90deg, var(--gold-400), var(--green-300));
+      transition: width 1s ease;
+    }
+    .cond-pct { font-size: 0.78rem; color: rgba(255,255,255,0.5); min-width: 36px; text-align: right; }
+
+    /* ── Skin metrics radar-like ─────────────────────────────── */
+    .metrics-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .metric-card {
+      padding: 16px; border-radius: var(--radius-md);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      text-align: center;
+    }
+    .metric-icon { font-size: 1.6rem; margin-bottom: 6px; }
+    .metric-val  {
+      font-size: 1.6rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--gold-400), var(--green-300));
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .metric-lbl  { font-size: 0.75rem; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+    /* ── Ring gauge ──────────────────────────────────────────── */
+    .ring-wrap { position: relative; width: 80px; height: 80px; margin: 0 auto 8px; }
+    .ring-svg  { transform: rotate(-90deg); }
+    .ring-bg   { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 6; }
+    .ring-fill { fill: none; stroke-width: 6; stroke-linecap: round;
+                 stroke: url(#goldGrad); transition: stroke-dashoffset 1.2s ease; }
+
+    /* ── Recommendations ─────────────────────────────────────── */
+    .rec-list { display: flex; flex-direction: column; gap: 16px; }
+    .rec-item {
+      display: flex; gap: 16px; padding: 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-md);
+      transition: all 0.2s;
+    }
+    .rec-item:hover {
+      background: rgba(244,166,41,0.07);
+      border-color: rgba(244,166,41,0.2);
+      transform: translateX(4px);
+    }
+    .rec-icon {
+      width: 48px; height: 48px; border-radius: var(--radius-md);
+      background: rgba(244,166,41,0.12);
+      border: 1px solid rgba(244,166,41,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; flex-shrink: 0;
+    }
+    .rec-body h4  { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+    .rec-body p   { font-size: 0.85rem; color: rgba(255,255,255,0.6); line-height: 1.6; }
+
+    /* ── Lifestyle flags ─────────────────────────────────────── */
+    .flag-list { display: flex; flex-direction: column; gap: 10px; }
+    .flag-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px;
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.2);
+      border-radius: var(--radius-md);
+      font-size: 0.88rem; color: rgba(255,255,255,0.8);
+    }
+    .no-flags {
+      padding: 16px; text-align: center;
+      color: var(--green-300); font-size: 0.9rem;
+      background: rgba(45,158,85,0.08);
+      border: 1px solid rgba(45,158,85,0.2);
+      border-radius: var(--radius-md);
+    }
+
+    /* ── CTA strip ───────────────────────────────────────────── */
+    .results-cta {
+      text-align: center; margin-top: 48px; padding: 40px 32px;
+    }
+    .results-cta h3 {
+      font-family: var(--font-display);
+      font-size: 1.8rem; margin-bottom: 12px;
+    }
+    .results-cta p { color: rgba(255,255,255,0.6); margin-bottom: 28px; }
+    .cta-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 700px) {
+      .results-grid { grid-template-columns: 1fr; }
+      .dosha-hero   { flex-direction: column; text-align: center; }
+      .dosha-tags   { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animated"></div>
+
+  <!-- SVG defs for ring gradient (must be in DOM) -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stop-color="#f4a629"/>
+        <stop offset="100%" stop-color="#6dcf90"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">
+      <div class="logo-icon">🌿</div>
+      AyurGenX
+    </a>
+    <div class="navbar-links">
+      <a href="/scan">New Scan</a>
+      <a href="/">Home</a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="results-page">
+    <div class="results-inner">
+
+      <!-- Hero -->
+      <div class="results-hero fade-in">
+        <div class="section-label">Step 3 of 3 — Your Results</div>
+        <h1>Your Ayurvedic <span class="gradient-text">Health Profile</span></h1>
+        <p>Personalised insights based on your face scan and health assessment</p>
+      </div>
+
+      <!-- Dosha hero -->
+      <div class="glass dosha-hero fade-in fade-in-d1" id="doshaHero">
+        <div class="dosha-emblem" id="doshaEmblem">🏵️</div>
+        <div class="dosha-info">
+          <h2 id="doshaTitle">Analysing…</h2>
+          <p id="doshaDesc">Generating your Ayurvedic profile…</p>
+          <div class="dosha-tags" id="doshaTags"></div>
+        </div>
+      </div>
+
+      <!-- Grid: conditions + skin metrics -->
+      <div class="results-grid">
+        <!-- Detected conditions -->
+        <div class="glass result-card fade-in fade-in-d2">
+          <div class="result-card-title">🔬 Detected Skin Conditions</div>
+          <div class="condition-list" id="conditionList">
+            <div style="color:rgba(255,255,255,0.4);font-size:0.9rem;">Loading…</div>
+          </div>
+        </div>
+
+        <!-- Skin metrics -->
+        <div class="glass result-card fade-in fade-in-d2">
+          <div class="result-card-title">📊 Skin Biomarkers</div>
+          <div class="metrics-grid" id="metricsGrid"></div>
+        </div>
+      </div>
+
+      <!-- Grid: lifestyle flags + dosha breakdown -->
+      <div class="results-grid">
+        <div class="glass result-card fade-in fade-in-d3">
+          <div class="result-card-title">⚠️ Lifestyle Flags</div>
+          <div id="flagList"></div>
+        </div>
+        <div class="glass result-card fade-in fade-in-d3">
+          <div class="result-card-title">🏵️ Dosha Breakdown</div>
+          <div id="doshaBreakdown" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+      </div>
+
+      <!-- Recommendations (full width) -->
+      <div class="glass result-card fade-in fade-in-d4">
+        <div class="result-card-title">🌿 Personalised Recommendations</div>
+        <div class="rec-list" id="recList">
+          <div style="color:rgba(255,255,255,0.4);font-size:0.9rem;">Loading…</div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="glass results-cta fade-in fade-in-d5">
+        <h3>Start Your Healing Journey 🌿</h3>
+        <p>Your Ayurvedic profile is ready. Take the first step towards balanced health today.</p>
+        <div class="cta-btns">
+          <a href="/scan" class="btn btn-primary" id="new-scan-btn">🔄 New Scan</a>
+          <button class="btn btn-secondary" onclick="downloadReport()" id="download-btn">⬇️ Download Report</button>
+          <button class="btn btn-outline"   onclick="shareResults()"   id="share-btn">🔗 Share</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const DOSHA_META = {
+      Pitta: {
+        icon: '🔥',
+        title: 'Pitta Dominant',
+        desc: 'You have a sharp, fiery constitution. Pitta governs metabolism, digestion, and intelligence. Imbalanced Pitta often shows up as skin inflammation, redness, acne, and dark spots.',
+        tags: ['Skin sensitivity', 'Heat intolerance', 'Strong digestion', 'Sharp mind'],
+        tagClass: 'chip-red',
+      },
+      Kapha: {
+        icon: '🌊',
+        title: 'Kapha Dominant',
+        desc: 'You have a stable, grounded constitution. Kapha governs structure, lubrication, and immunity. Imbalances show up as blackheads, oily skin, enlarged pores, and lethargy.',
+        tags: ['Oily skin', 'Slow metabolism', 'Strong endurance', 'Calm nature'],
+        tagClass: 'chip-green',
+      },
+      Vata: {
+        icon: '🌬️',
+        title: 'Vata Dominant',
+        desc: 'You have a light, creative constitution. Vata governs movement and creativity. Imbalances manifest as dry skin, wrinkles, anxiety, and poor sleep.',
+        tags: ['Dry skin', 'Light sleep', 'Creative', 'Sensitive to cold'],
+        tagClass: 'chip-gold',
+      },
+      Tridosha: {
+        icon: '⚖️',
+        title: 'Balanced Tridosha',
+        desc: 'Your constitution shows elements of all three doshas in relative balance. This is the ideal Ayurvedic state — focus on maintaining this harmony through consistent lifestyle practices.',
+        tags: ['Balanced', 'Adaptable', 'Resilient'],
+        tagClass: 'chip-green',
+      },
+    };
+
+    /* ── Load data ─────────────────────────────────────────────────────── */
+    window.addEventListener('DOMContentLoaded', () => {
+      let summary = JSON.parse(sessionStorage.getItem('ayur_summary') || 'null');
+
+      // Demo fallback
+      if (!summary) {
+        summary = {
+          dominant_dosha: 'Pitta',
+          dosha_breakdown: { Pitta: 2, Kapha: 1 },
+          detected_conditions: [
+            { condition:'acne',       confidence:0.62, severity:'Moderate', ayurvedic_dosha:'Pitta' },
+            { condition:'dark spots', confidence:0.38, severity:'Mild',     ayurvedic_dosha:'Pitta' },
+            { condition:'pores',      confidence:0.31, severity:'Mild',     ayurvedic_dosha:'Kapha' },
+          ],
+          skin_metrics: { skin_tone:'Medium', glow_score:65, dullness_pct:35, redness_index:12, roughness_pct:28 },
+          recommendations: [
+            { icon:'🏵️', title:'Ayurvedic Type: Pitta', desc:'Avoid spicy food, direct sun. Use aloe vera, rose water, and cooling herbs like Amla.' },
+            { icon:'🌸', title:'Acne Care', desc:'Neem face wash, avoid touching face, reduce dairy/sugar intake. Turmeric-honey mask twice a week.' },
+            { icon:'☀️', title:'Pigmentation Defence', desc:'Apply SPF 50 daily. Vitamin C serum morning, Kojic acid night cream. Papaya + lemon DIY mask.' },
+          ],
+          lifestyle_flags: ['Low hydration'],
+        };
+      }
+
+      renderAll(summary);
+    });
+
+    /* ── Render all sections ───────────────────────────────────────────── */
+    function renderAll(s) {
+      renderDosha(s.dominant_dosha);
+      renderConditions(s.detected_conditions);
+      renderMetrics(s.skin_metrics);
+      renderFlags(s.lifestyle_flags);
+      renderDoshaBreakdown(s.dosha_breakdown);
+      renderRecs(s.recommendations);
+    }
+
+    function renderDosha(dosha) {
+      const meta = DOSHA_META[dosha] || DOSHA_META['Tridosha'];
+      document.getElementById('doshaEmblem').textContent = meta.icon;
+      document.getElementById('doshaTitle').textContent  = meta.title;
+      document.getElementById('doshaDesc').textContent   = meta.desc;
+      const tagsEl = document.getElementById('doshaTags');
+      tagsEl.innerHTML = meta.tags.map(t =>
+        `<span class="chip ${meta.tagClass}">${t}</span>`
+      ).join('');
+    }
+
+    function renderConditions(conditions) {
+      const el = document.getElementById('conditionList');
+      if (!conditions.length) {
+        el.innerHTML = '<div class="no-flags">✅ No significant skin conditions detected. Your skin looks healthy!</div>';
+        return;
+      }
+      el.innerHTML = conditions.map(c => {
+        const pct   = Math.round(c.confidence * 100);
+        const chip  = c.severity==='High' ? 'chip-red' : c.severity==='Moderate' ? 'chip-gold' : 'chip-green';
+        return `
+          <div class="cond-row">
+            <div class="cond-name">${c.condition}</div>
+            <div class="cond-bar-wrap">
+              <div class="cond-bar" style="width:0%" data-target="${pct}"></div>
+            </div>
+            <div class="cond-pct">${pct}%</div>
+            <span class="chip ${chip}" style="font-size:0.68rem;">${c.severity}</span>
+          </div>`;
+      }).join('');
+      // Animate bars
+      setTimeout(() => {
+        document.querySelectorAll('.cond-bar').forEach(b => {
+          b.style.width = b.dataset.target + '%';
+        });
+      }, 100);
+    }
+
+    function renderMetrics(m) {
+      const grid = document.getElementById('metricsGrid');
+      const items = [
+        { icon:'✨', val: m.glow_score + '%',   lbl:'Glow Score',   r: m.glow_score },
+        { icon:'🌑', val: m.dullness_pct + '%', lbl:'Dullness',     r: m.dullness_pct },
+        { icon:'🎨', val: m.skin_tone,          lbl:'Skin Tone',    r: null },
+        { icon:'🔴', val: m.redness_index+'%',  lbl:'Redness Index',r: m.redness_index },
+      ];
+      grid.innerHTML = items.map(i => {
+        const R = 30, C = 2*Math.PI*R;
+        const offset = i.r != null ? C - (i.r/100)*C : C;
+        return `
+          <div class="metric-card">
+            ${i.r != null ? `
+            <div class="ring-wrap">
+              <svg class="ring-svg" viewBox="0 0 70 70" width="70" height="70">
+                <circle class="ring-bg"   cx="35" cy="35" r="${R}"/>
+                <circle class="ring-fill" cx="35" cy="35" r="${R}"
+                  stroke-dasharray="${C}"
+                  stroke-dashoffset="${C}"
+                  data-offset="${offset}"/>
+              </svg>
+            </div>` : `<div class="metric-icon">${i.icon}</div>`}
+            <div class="metric-val">${i.val}</div>
+            <div class="metric-lbl">${i.lbl}</div>
+          </div>`;
+      }).join('');
+      // Animate rings
+      setTimeout(() => {
+        document.querySelectorAll('.ring-fill').forEach(r => {
+          r.style.strokeDashoffset = r.dataset.offset;
+        });
+      }, 200);
+    }
+
+    function renderFlags(flags) {
+      const el = document.getElementById('flagList');
+      if (!flags.length) {
+        el.innerHTML = '<div class="no-flags">🎉 No major lifestyle concerns detected!</div>';
+        return;
+      }
+      el.innerHTML = `<div class="flag-list">${
+        flags.map(f => `<div class="flag-item">⚠️ ${f}</div>`).join('')
+      }</div>`;
+    }
+
+    function renderDoshaBreakdown(breakdown) {
+      const el = document.getElementById('doshaBreakdown');
+      const total = Object.values(breakdown).reduce((a,b)=>a+b, 0) || 1;
+      const colors = { Pitta:'#f87171', Kapha:'#6dcf90', Vata:'#f4a629', Tridosha:'#c084fc' };
+      el.innerHTML = Object.entries(breakdown).map(([dosha, count]) => {
+        const pct = Math.round((count/total)*100);
+        return `
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:5px;">
+              <span>${dosha}</span><span style="color:rgba(255,255,255,0.5)">${pct}%</span>
+            </div>
+            <div class="cond-bar-wrap">
+              <div class="cond-bar"
+                   style="width:0%;background:${colors[dosha]||'var(--gold-400)'}"
+                   data-target="${pct}"></div>
+            </div>
+          </div>`;
+      }).join('');
+      setTimeout(() => {
+        el.querySelectorAll('.cond-bar').forEach(b => b.style.width = b.dataset.target + '%');
+      }, 200);
+    }
+
+    function renderRecs(recs) {
+      const el = document.getElementById('recList');
+      el.innerHTML = recs.map((r,i) => `
+        <div class="rec-item fade-in" style="animation-delay:${i*0.08}s">
+          <div class="rec-icon">${r.icon}</div>
+          <div class="rec-body">
+            <h4>${r.title}</h4>
+            <p>${r.desc}</p>
+          </div>
+        </div>`).join('');
+    }
+
+    /* ── Actions ───────────────────────────────────────────────────────── */
+    function downloadReport() {
+      const summary = JSON.parse(sessionStorage.getItem('ayur_summary') || '{}');
+      const text = [
+        'AyurGenX — Ayurvedic Health Report',
+        '====================================',
+        `Dominant Dosha: ${summary.dominant_dosha || '—'}`,
+        '',
+        'Detected Conditions:',
+        ...(summary.detected_conditions||[]).map(c =>
+          `  • ${c.condition} (${Math.round(c.confidence*100)}% confidence, ${c.severity})`
+        ),
+        '',
+        'Skin Metrics:',
+        `  Glow Score:    ${summary.skin_metrics?.glow_score || '—'}%`,
+        `  Dullness:      ${summary.skin_metrics?.dullness_pct || '—'}%`,
+        `  Skin Tone:     ${summary.skin_metrics?.skin_tone || '—'}`,
+        '',
+        'Recommendations:',
+        ...(summary.recommendations||[]).map(r => `  ${r.icon} ${r.title}: ${r.desc}`),
+        '',
+        'Lifestyle Flags:',
+        ...(summary.lifestyle_flags?.length
+            ? summary.lifestyle_flags.map(f=>`  ⚠️ ${f}`)
+            : ['  ✅ None detected']),
+        '',
+        'Generated by AyurGenX — AI × Ayurveda',
+      ].join('\n');
+
+      const blob = new Blob([text], { type: 'text/plain' });
+      const a    = document.createElement('a');
+      a.href     = URL.createObjectURL(blob);
+      a.download = 'AyurGenX_Report.txt';
+      a.click();
+    }
+
+    function shareResults() {
+      const summary = JSON.parse(sessionStorage.getItem('ayur_summary') || '{}');
+      const text = `🌿 My AyurGenX Health Report\n\nDominant Dosha: ${summary.dominant_dosha || '—'}\nGlow Score: ${summary.skin_metrics?.glow_score || '—'}%\n\nGet yours at AyurGenX!`;
+      if (navigator.share) {
+        navigator.share({ title:'AyurGenX Results', text });
+      } else {
+        navigator.clipboard.writeText(text).then(() => alert('Results copied to clipboard! 📋'));
+      }
+    }
+  </script>
+</body>
+</html>

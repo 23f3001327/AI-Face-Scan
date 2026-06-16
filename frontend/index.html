@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AyurGenX — AI-Powered Ayurvedic Health Assessment</title>
+  <meta name="description" content="Discover your Ayurvedic health profile through AI-powered face scanning and smart health assessment. Personalised Ayurvedic recommendations in minutes." />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    /* ── Hero ──────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding: 120px 40px 80px;
+      position: relative;
+    }
+    .hero-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: center;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 5vw, 4.4rem);
+      line-height: 1.1; margin-bottom: 24px;
+    }
+    .hero-desc {
+      font-size: 1.15rem;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.8; margin-bottom: 40px;
+      max-width: 520px;
+    }
+    .hero-cta { display: flex; gap: 16px; flex-wrap: wrap; }
+
+    /* face-scan card */
+    .hero-visual {
+      position: relative; display: flex;
+      justify-content: center; align-items: center;
+    }
+    .scan-card {
+      width: 340px; padding: 32px;
+      text-align: center; position: relative;
+    }
+    .scan-avatar {
+      width: 180px; height: 180px; border-radius: 50%;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, var(--green-700), var(--green-900));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 5rem; position: relative; overflow: visible;
+    }
+    .scan-overlay {
+      position: absolute; inset: -4px;
+      border-radius: 50%;
+      background: conic-gradient(
+        from 0deg, var(--gold-400) 0%, transparent 40%,
+        transparent 60%, var(--green-300) 100%
+      );
+      animation: spin 3s linear infinite;
+      z-index: -1;
+    }
+    .scan-dots {
+      display: flex; justify-content: center;
+      gap: 8px; margin-top: 20px;
+    }
+    .scan-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gold-400);
+      animation: dotBlink 1.4s ease-in-out infinite;
+    }
+    .scan-dot:nth-child(2) { animation-delay: 0.2s; }
+    .scan-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotBlink {
+      0%,100% { opacity: 0.3; transform: scale(0.8); }
+      50%      { opacity: 1;   transform: scale(1.2); }
+    }
+    .scan-metrics {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; margin-top: 24px;
+    }
+    .metric-chip {
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.06);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255,255,255,0.1);
+      text-align: left;
+    }
+    .metric-chip .label { font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
+    .metric-chip .value { font-size: 0.9rem; font-weight: 600; color: var(--gold-400); }
+
+    /* floating badges */
+    .float-badge {
+      position: absolute;
+      padding: 10px 16px;
+      background: rgba(13,43,25,0.9);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(12px);
+      border-radius: var(--radius-md);
+      font-size: 0.82rem; font-weight: 600;
+      white-space: nowrap;
+      animation: floatY 3s ease-in-out infinite;
+    }
+    .float-badge-1 { top: 10%;  left: -20%; animation-delay: 0s; }
+    .float-badge-2 { bottom: 15%; right: -15%; animation-delay: 1s; }
+    @keyframes floatY {
+      0%,100% { transform: translateY(0);    }
+      50%      { transform: translateY(-8px); }
+    }
+
+    /* ── How it works ──────────────────────────────────────── */
+    .how-section {
+      padding: 100px 40px;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .how-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 28px; margin-top: 60px;
+    }
+    .how-card {
+      padding: 36px 28px; text-align: center;
+      transition: transform var(--transition);
+    }
+    .how-card:hover { transform: translateY(-8px); }
+    .how-icon {
+      width: 72px; height: 72px; border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(244,166,41,0.2), rgba(45,158,85,0.2));
+      border: 1px solid rgba(244,166,41,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; margin: 0 auto 24px;
+    }
+    .how-card h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 12px; }
+    .how-card p  { font-size: 0.95rem; color: rgba(255,255,255,0.6); line-height: 1.7; }
+    .how-step {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--gold-400); color: var(--green-950);
+      font-size: 0.8rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+    }
+
+    /* ── Conditions grid ───────────────────────────────────── */
+    .conditions-section {
+      padding: 80px 40px;
+      background: rgba(255,255,255,0.02);
+      border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .conditions-inner { max-width: 1200px; margin: 0 auto; }
+    .conditions-grid {
+      display: flex; flex-wrap: wrap;
+      gap: 12px; margin-top: 40px;
+    }
+    .condition-tag {
+      padding: 10px 20px;
+      background: rgba(45,158,85,0.12);
+      border: 1px solid rgba(45,158,85,0.3);
+      border-radius: var(--radius-full);
+      font-size: 0.9rem; font-weight: 500;
+      transition: all 0.2s;
+    }
+    .condition-tag:hover {
+      background: rgba(45,158,85,0.25);
+      transform: scale(1.04);
+    }
+
+    /* ── CTA section ───────────────────────────────────────── */
+    .cta-section {
+      padding: 100px 40px;
+      text-align: center;
+    }
+    .cta-inner {
+      max-width: 700px; margin: 0 auto;
+      padding: 64px 48px;
+    }
+    .cta-inner h2 {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3rem);
+      margin-bottom: 20px;
+    }
+    .cta-inner p {
+      color: rgba(255,255,255,0.65);
+      font-size: 1.05rem; margin-bottom: 36px;
+      line-height: 1.7;
+    }
+
+    /* ── Footer ────────────────────────────────────────────── */
+    footer {
+      padding: 40px;
+      border-top: 1px solid var(--glass-border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    footer .brand { font-family: var(--font-display); font-size: 1.2rem; }
+    footer .copy  { font-size: 0.85rem; color: rgba(255,255,255,0.4); }
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; text-align: center; }
+      .hero-desc, .hero-cta { margin-left: auto; margin-right: auto; }
+      .hero-cta { justify-content: center; }
+      .hero-visual { display: none; }
+      .how-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animated"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <div class="logo-icon">🌿</div>
+      AyurGenX
+    </div>
+    <div class="navbar-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#conditions">What we detect</a>
+      <a href="/scan" class="btn btn-primary" style="padding:10px 22px;font-size:0.9rem;">
+        Start Scan ✨
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="section-label fade-in">AI × Ayurveda</div>
+        <h1 class="hero-title fade-in fade-in-d1">
+          Your face reveals your<br/>
+          <span class="gradient-text">inner health story</span>
+        </h1>
+        <p class="hero-desc fade-in fade-in-d2">
+          AyurGenX uses computer vision to scan your skin, detect health signals,
+          and deliver a personalised Ayurvedic assessment — all in under 2 minutes.
+          No lengthy forms. Just your face and a few smart questions.
+        </p>
+        <div class="hero-cta fade-in fade-in-d3">
+          <a href="/scan" class="btn btn-primary" id="hero-start-btn">
+            🌿 Begin Your Scan
+          </a>
+          <a href="#how-it-works" class="btn btn-secondary">Learn More →</a>
+        </div>
+      </div>
+
+      <!-- Animated scan card -->
+      <div class="hero-visual fade-in fade-in-d2">
+        <div class="float-badge float-badge-1">✅ 10 conditions detected</div>
+        <div class="float-badge float-badge-2">🏵️ Dosha: Pitta dominant</div>
+
+        <div class="glass scan-card">
+          <p class="section-label" style="text-align:center;">Live Face Analysis</p>
+          <div class="scan-avatar">
+            🧑
+            <div class="scan-overlay"></div>
+          </div>
+          <div class="scan-dots">
+            <div class="scan-dot"></div>
+            <div class="scan-dot"></div>
+            <div class="scan-dot"></div>
+          </div>
+          <p style="font-size:0.85rem;color:rgba(255,255,255,0.5);margin-top:14px;">
+            Analysing skin biomarkers…
+          </p>
+          <div class="scan-metrics">
+            <div class="metric-chip">
+              <div class="label">Glow Score</div>
+              <div class="value">73%</div>
+            </div>
+            <div class="metric-chip">
+              <div class="label">Skin Tone</div>
+              <div class="value">Medium</div>
+            </div>
+            <div class="metric-chip">
+              <div class="label">Redness</div>
+              <div class="value">Low</div>
+            </div>
+            <div class="metric-chip">
+              <div class="label">Texture</div>
+              <div class="value">Smooth</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-section" id="how-it-works">
+    <div class="section-label">The Process</div>
+    <h2 class="section-title">3 simple steps to<br/><span class="gradient-text">your Ayurvedic profile</span></h2>
+    <div class="how-grid">
+      <div class="glass how-card fade-in">
+        <div class="how-step">1</div>
+        <div class="how-icon">📸</div>
+        <h3>Upload a Selfie</h3>
+        <p>Take a clear, natural-light selfie. Our AI filters out camera beautification, lighting issues, and filters to see your real skin.</p>
+      </div>
+      <div class="glass how-card fade-in fade-in-d1">
+        <div class="how-step">2</div>
+        <div class="how-icon">🤖</div>
+        <h3>AI Face Scan</h3>
+        <p>Our EfficientNet model detects 10 skin conditions — from acne and pigmentation to redness and wrinkles — with severity scoring.</p>
+      </div>
+      <div class="glass how-card fade-in fade-in-d2">
+        <div class="how-step">3</div>
+        <div class="how-icon">🌿</div>
+        <h3>Smart Assessment</h3>
+        <p>Answer just 3–5 targeted questions. Our AI adapts based on your scan results to deliver a personalised Ayurvedic health plan.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Conditions -->
+  <section class="conditions-section" id="conditions">
+    <div class="conditions-inner">
+      <div class="section-label">What We Detect</div>
+      <h2 class="section-title">10 skin conditions.<br/><span class="gradient-text">Infinite insights.</span></h2>
+      <p class="section-subtitle">
+        Powered by your trained EfficientNet model, AyurGenX identifies these
+        conditions and maps them to Ayurvedic doshas for holistic health insights.
+      </p>
+      <div class="conditions-grid">
+        <div class="condition-tag">🔴 Redness</div>
+        <div class="condition-tag">🌋 Acne</div>
+        <div class="condition-tag">⚫ Blackheads</div>
+        <div class="condition-tag">🟤 Dark Spots</div>
+        <div class="condition-tag">🔥 Inflammatory Acne</div>
+        <div class="condition-tag">• Non-Inflammatory Blackheads</div>
+        <div class="condition-tag">○ Non-Inflammatory Whiteheads</div>
+        <div class="condition-tag">🎭 Pigmentation</div>
+        <div class="condition-tag">🕳️ Enlarged Pores</div>
+        <div class="condition-tag">〰️ Wrinkles</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="glass cta-inner">
+      <div class="section-label">Ready?</div>
+      <h2>Begin your Ayurvedic<br/><span class="gradient-text">health journey</span></h2>
+      <p>No account needed. No lengthy forms. Just upload a selfie and let our AI do the rest in under 2 minutes.</p>
+      <a href="/scan" class="btn btn-primary" id="cta-scan-btn" style="font-size:1.1rem;padding:16px 40px;">
+        🌿 Start Free Scan
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="brand">🌿 AyurGenX</div>
+    <div class="copy">© 2025 AyurGenX · Built with ❤️ using AI + Ayurveda</div>
+  </footer>
+</body>
+</html>

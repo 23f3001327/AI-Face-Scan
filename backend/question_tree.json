@@ -1,0 +1,373 @@
+{
+  "initial_questions": [
+    {
+      "id": "age_group",
+      "text": "First, how old are you? 🌿",
+      "subtext": "This helps us personalize your Ayurvedic profile",
+      "type": "card_select",
+      "options": [
+        { "label": "18–25", "icon": "🌱", "value": "18-25" },
+        { "label": "26–35", "icon": "✨", "value": "26-35" },
+        { "label": "36–45", "icon": "🌿", "value": "36-45" },
+        { "label": "45+",   "icon": "🏵️", "value": "45+" }
+      ],
+      "next": "primary_concern"
+    },
+    {
+      "id": "primary_concern",
+      "text": "What brings you here today? 🍃",
+      "subtext": "Choose all that feel true for you right now",
+      "type": "multi_card",
+      "options": [
+        { "label": "Skin Issues",    "icon": "🌸", "value": "skin" },
+        { "label": "Poor Sleep",     "icon": "😴", "value": "sleep" },
+        { "label": "Low Energy",     "icon": "⚡", "value": "energy" },
+        { "label": "High Stress",    "icon": "🧘", "value": "stress" },
+        { "label": "Gut / Digestion","icon": "🌿", "value": "gut" },
+        { "label": "Hair Loss",      "icon": "💆", "value": "hair" }
+      ],
+      "next": "scan_prompt"
+    }
+  ],
+
+  "condition_branches": {
+    "acne": {
+      "trigger_threshold": 0.25,
+      "priority": 1,
+      "entry_question": {
+        "id": "acne_duration",
+        "text": "Our scan noticed some breakout activity 🔍 — how long has this been going on?",
+        "type": "single_choice",
+        "options": [
+          { "label": "Just started (< 1 month)", "icon": "🆕", "value": "recent",   "next": "acne_diet" },
+          { "label": "A few months",             "icon": "📅", "value": "moderate", "next": "acne_stress" },
+          { "label": "Long-term (6+ months)",    "icon": "⏳", "value": "chronic",  "next": "acne_treatment" }
+        ]
+      },
+      "follow_ups": {
+        "acne_diet": {
+          "id": "acne_diet",
+          "text": "Have you made any recent diet changes or started new medications?",
+          "type": "single_choice",
+          "options": [
+            { "label": "Yes, diet changed",      "value": "diet",    "next": "lifestyle_water" },
+            { "label": "Yes, new medication",    "value": "meds",    "next": "lifestyle_water" },
+            { "label": "No changes at all",      "value": "none",    "next": "lifestyle_water" }
+          ]
+        },
+        "acne_stress": {
+          "id": "acne_stress",
+          "text": "How would you describe your stress levels lately?",
+          "type": "single_choice",
+          "options": [
+            { "label": "😌 Calm & balanced",     "value": "low",    "next": "lifestyle_water" },
+            { "label": "😐 Moderate pressure",   "value": "medium", "next": "lifestyle_sleep" },
+            { "label": "😰 High stress",         "value": "high",   "next": "lifestyle_sleep" }
+          ]
+        },
+        "acne_treatment": {
+          "id": "acne_treatment",
+          "text": "Have you tried any skincare treatments or remedies before?",
+          "type": "single_choice",
+          "options": [
+            { "label": "Yes, medical treatment",  "value": "medical",   "next": "lifestyle_water" },
+            { "label": "Yes, home remedies",      "value": "home",      "next": "lifestyle_water" },
+            { "label": "No, first time seeking help", "value": "none",  "next": "lifestyle_water" }
+          ]
+        }
+      }
+    },
+
+    "inflammatory acne": {
+      "trigger_threshold": 0.25,
+      "priority": 1,
+      "entry_question": {
+        "id": "inflam_acne_pain",
+        "text": "We noticed some active inflammation on your skin. Are the breakouts painful or tender to touch?",
+        "type": "single_choice",
+        "options": [
+          { "label": "Yes, quite painful",     "value": "painful",    "next": "inflam_acne_cycle" },
+          { "label": "Mildly uncomfortable",   "value": "mild",       "next": "inflam_acne_cycle" },
+          { "label": "No pain at all",         "value": "none",       "next": "lifestyle_sleep" }
+        ]
+      },
+      "follow_ups": {
+        "inflam_acne_cycle": {
+          "id": "inflam_acne_cycle",
+          "text": "Do your breakouts seem to follow a pattern (e.g., before periods, after oily food, during stress)?",
+          "type": "single_choice",
+          "options": [
+            { "label": "Yes, hormonal / monthly", "value": "hormonal",  "next": "lifestyle_sleep" },
+            { "label": "Yes, food-triggered",      "value": "food",      "next": "lifestyle_sleep" },
+            { "label": "Yes, stress-triggered",    "value": "stress",    "next": "lifestyle_sleep" },
+            { "label": "Random, no pattern",       "value": "random",    "next": "lifestyle_sleep" }
+          ]
+        }
+      }
+    },
+
+    "blackheads": {
+      "trigger_threshold": 0.25,
+      "priority": 3,
+      "entry_question": {
+        "id": "blackheads_zone",
+        "text": "Blackheads detected in the scan 🔬 — where do they bother you most?",
+        "type": "single_choice",
+        "options": [
+          { "label": "Nose & T-zone",    "value": "tzone",   "next": "lifestyle_cleanse" },
+          { "label": "Chin & jawline",   "value": "chin",    "next": "lifestyle_cleanse" },
+          { "label": "Forehead",         "value": "forehead","next": "lifestyle_cleanse" },
+          { "label": "All over",         "value": "all",     "next": "lifestyle_cleanse" }
+        ]
+      },
+      "follow_ups": {
+        "lifestyle_cleanse": {
+          "id": "lifestyle_cleanse",
+          "text": "How often do you cleanse your face?",
+          "type": "single_choice",
+          "options": [
+            { "label": "Twice daily",       "value": "twice",  "next": "lifestyle_water" },
+            { "label": "Once daily",        "value": "once",   "next": "lifestyle_water" },
+            { "label": "Occasionally",      "value": "rarely", "next": "lifestyle_water" }
+          ]
+        }
+      }
+    },
+
+    "non inflammatory acne black heads": {
+      "trigger_threshold": 0.25,
+      "priority": 3,
+      "entry_question": {
+        "id": "non_inflam_bh_skin_type",
+        "text": "The scan shows non-inflamed blackheads. How does your skin usually feel by midday?",
+        "type": "single_choice",
+        "options": [
+          { "label": "Very oily / shiny",      "value": "oily",      "next": "lifestyle_cleanse" },
+          { "label": "Combination (T-zone)",   "value": "combo",     "next": "lifestyle_cleanse" },
+          { "label": "Normal / dry",           "value": "dry",       "next": "lifestyle_water" }
+        ]
+      },
+      "follow_ups": {}
+    },
+
+    "non inflammatory acne white heads": {
+      "trigger_threshold": 0.25,
+      "priority": 3,
+      "entry_question": {
+        "id": "non_inflam_wh_hydration",
+        "text": "Whiteheads detected 🔬. How much water do you drink daily?",
+        "type": "single_choice",
+        "options": [
+          { "label": "Less than 1 litre",  "value": "low",    "next": "lifestyle_sleep" },
+          { "label": "1–2 litres",         "value": "medium", "next": "lifestyle_sleep" },
+          { "label": "More than 2 litres", "value": "high",   "next": "lifestyle_sleep" }
+        ]
+      },
+      "follow_ups": {}
+    },
+
+    "dark spots": {
+      "trigger_threshold": 0.25,
+      "priority": 2,
+      "entry_question": {
+        "id": "darkspots_sun",
+        "text": "We noticed some dark spots. How much time do you spend outdoors in direct sunlight?",
+        "type": "single_choice",
+        "options": [
+          { "label": "Mostly indoors",         "value": "low",    "next": "darkspots_sunscreen" },
+          { "label": "1–2 hours/day",          "value": "medium", "next": "darkspots_sunscreen" },
+          { "label": "3+ hours/day",           "value": "high",   "next": "darkspots_sunscreen" }
+        ]
+      },
+      "follow_ups": {
+        "darkspots_sunscreen": {
+          "id": "darkspots_sunscreen",
+          "text": "Do you regularly use sunscreen (SPF 30+)?",
+          "type": "single_choice",
+          "options": [
+            { "label": "Yes, every day",        "value": "daily",      "next": "lifestyle_sleep" },
+            { "label": "Sometimes",             "value": "sometimes",  "next": "lifestyle_sleep" },
+            { "label": "Rarely / Never",        "value": "never",      "next": "lifestyle_sleep" }
+          ]
+        }
+      }
+    },
+
+    "pigmentation": {
+      "trigger_threshold": 0.25,
+      "priority": 2,
+      "entry_question": {
+        "id": "pigment_duration",
+        "text": "Pigmentation patterns detected 🌿. How long have you had these skin tone changes?",
+        "type": "single_choice",
+        "options": [
+          { "label": "Recently appeared",    "value": "recent",   "next": "pigment_hormones" },
+          { "label": "Several months",       "value": "months",   "next": "pigment_hormones" },
+          { "label": "Years",                "value": "years",    "next": "lifestyle_sleep" }
+        ]
+      },
+      "follow_ups": {
+        "pigment_hormones": {
+          "id": "pigment_hormones",
+          "text": "Have you noticed any hormonal changes recently (pregnancy, PCOS, thyroid issues)?",
+          "type": "single_choice",
+          "options": [
+            { "label": "Yes",         "value": "yes",     "next": "lifestyle_sleep" },
+            { "label": "Not sure",    "value": "unsure",  "next": "lifestyle_sleep" },
+            { "label": "No",          "value": "no",      "next": "lifestyle_sleep" }
+          ]
+        }
+      }
+    },
+
+    "Redness": {
+      "trigger_threshold": 0.25,
+      "priority": 2,
+      "entry_question": {
+        "id": "redness_trigger",
+        "text": "Skin redness detected 🔴. Does your skin often react to products, food, or weather?",
+        "type": "single_choice",
+        "options": [
+          { "label": "Yes, very sensitive",       "value": "high",   "next": "redness_diet" },
+          { "label": "Occasionally reacts",       "value": "medium", "next": "redness_diet" },
+          { "label": "Not usually",               "value": "low",    "next": "lifestyle_sleep" }
+        ]
+      },
+      "follow_ups": {
+        "redness_diet": {
+          "id": "redness_diet",
+          "text": "Do you consume spicy food, alcohol, or caffeine regularly?",
+          "type": "single_choice",
+          "options": [
+            { "label": "Yes, frequently",   "value": "high",   "next": "lifestyle_sleep" },
+            { "label": "Occasionally",      "value": "medium", "next": "lifestyle_sleep" },
+            { "label": "Rarely / Never",    "value": "low",    "next": "lifestyle_sleep" }
+          ]
+        }
+      }
+    },
+
+    "pores": {
+      "trigger_threshold": 0.30,
+      "priority": 4,
+      "entry_question": {
+        "id": "pores_oiliness",
+        "text": "Enlarged pores noticed. How oily does your skin get during the day?",
+        "type": "single_choice",
+        "options": [
+          { "label": "Very oily by noon",     "value": "high",   "next": "lifestyle_cleanse" },
+          { "label": "Slightly oily T-zone",  "value": "medium", "next": "lifestyle_cleanse" },
+          { "label": "Not oily at all",       "value": "low",    "next": "lifestyle_water" }
+        ]
+      },
+      "follow_ups": {}
+    },
+
+    "wrinkles": {
+      "trigger_threshold": 0.25,
+      "priority": 3,
+      "entry_question": {
+        "id": "wrinkles_sleep",
+        "text": "Fine lines & wrinkles visible. How many hours of sleep do you typically get?",
+        "type": "single_choice",
+        "options": [
+          { "label": "Less than 5 hours",   "value": "low",    "next": "wrinkles_hydration" },
+          { "label": "5–7 hours",           "value": "medium", "next": "wrinkles_hydration" },
+          { "label": "7–9 hours",           "value": "good",   "next": "wrinkles_hydration" }
+        ]
+      },
+      "follow_ups": {
+        "wrinkles_hydration": {
+          "id": "wrinkles_hydration",
+          "text": "Do you use any moisturizer or anti-aging skincare regularly?",
+          "type": "single_choice",
+          "options": [
+            { "label": "Yes, daily routine",   "value": "yes",       "next": "lifestyle_water" },
+            { "label": "Sometimes",            "value": "sometimes", "next": "lifestyle_water" },
+            { "label": "No skincare routine",  "value": "no",        "next": "lifestyle_water" }
+          ]
+        }
+      }
+    }
+  },
+
+  "shared_questions": {
+    "lifestyle_sleep": {
+      "id": "lifestyle_sleep",
+      "text": "How would you rate your sleep quality lately? 😴",
+      "type": "single_choice",
+      "options": [
+        { "label": "😴 Deep & restful",          "value": "good",   "next": "lifestyle_water" },
+        { "label": "😐 Okay but not great",      "value": "medium", "next": "lifestyle_water" },
+        { "label": "😰 Poor — stressed or restless", "value": "bad","next": "lifestyle_stress" }
+      ]
+    },
+    "lifestyle_stress": {
+      "id": "lifestyle_stress",
+      "text": "You mentioned poor sleep. Are you currently going through any stressful situations? 🧘",
+      "type": "single_choice",
+      "options": [
+        { "label": "Work pressure",         "value": "work",      "next": "lifestyle_water" },
+        { "label": "Personal / family",     "value": "personal",  "next": "lifestyle_water" },
+        { "label": "Health anxiety",        "value": "health",    "next": "lifestyle_water" },
+        { "label": "General anxiety",       "value": "anxiety",   "next": "lifestyle_water" }
+      ]
+    },
+    "lifestyle_water": {
+      "id": "lifestyle_water",
+      "text": "Last one! 🌊 How much water do you drink daily?",
+      "type": "single_choice",
+      "options": [
+        { "label": "Less than 1 litre",  "value": "low",    "next": "END" },
+        { "label": "1–2 litres",         "value": "medium", "next": "END" },
+        { "label": "More than 2 litres", "value": "high",   "next": "END" }
+      ]
+    }
+  },
+
+  "concern_questions": {
+    "sleep": {
+      "id": "concern_sleep_detail",
+      "text": "You mentioned sleep issues 🌙. What's the main problem?",
+      "type": "single_choice",
+      "options": [
+        { "label": "Hard to fall asleep",       "value": "onset",       "next": "lifestyle_stress" },
+        { "label": "Wake up frequently",        "value": "maintenance", "next": "lifestyle_stress" },
+        { "label": "Wake up too early",         "value": "early_wake",  "next": "lifestyle_stress" },
+        { "label": "Never feel refreshed",      "value": "quality",     "next": "lifestyle_stress" }
+      ]
+    },
+    "stress": {
+      "id": "concern_stress_detail",
+      "text": "You flagged stress as a concern 🧘. How does it usually show up for you?",
+      "type": "single_choice",
+      "options": [
+        { "label": "Headaches & tension",        "value": "physical",   "next": "lifestyle_sleep" },
+        { "label": "Overthinking / anxiety",     "value": "mental",     "next": "lifestyle_sleep" },
+        { "label": "Irritability & mood swings", "value": "emotional",  "next": "lifestyle_sleep" },
+        { "label": "Fatigue & burnout",          "value": "burnout",    "next": "lifestyle_sleep" }
+      ]
+    },
+    "energy": {
+      "id": "concern_energy_detail",
+      "text": "Low energy detected ⚡. When do you feel the most drained?",
+      "type": "single_choice",
+      "options": [
+        { "label": "Morning — hard to wake up",  "value": "morning",    "next": "lifestyle_sleep" },
+        { "label": "Afternoon slump",            "value": "afternoon",  "next": "lifestyle_sleep" },
+        { "label": "All day exhaustion",         "value": "all_day",    "next": "lifestyle_sleep" }
+      ]
+    },
+    "gut": {
+      "id": "concern_gut_detail",
+      "text": "Gut health flagged 🌿. Which best describes your experience?",
+      "type": "single_choice",
+      "options": [
+        { "label": "Bloating & gas",         "value": "bloating",   "next": "lifestyle_water" },
+        { "label": "Constipation",           "value": "constipation","next": "lifestyle_water" },
+        { "label": "Acid reflux / acidity",  "value": "acidity",    "next": "lifestyle_water" },
+        { "label": "Irregular digestion",    "value": "irregular",  "next": "lifestyle_water" }
+      ]
+    }
+  }
+}

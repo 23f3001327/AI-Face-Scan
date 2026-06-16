@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AyurGenX — Face Scan</title>
+  <meta name="description" content="Upload your selfie for AI-powered skin analysis. Our EfficientNet model detects 10 skin conditions with Ayurvedic insights." />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    .scan-page {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 100px 24px 60px;
+    }
+    .scan-container { max-width: 760px; width: 100%; }
+
+    /* ── Header ──────────────────────────────────────────────── */
+    .scan-header { text-align: center; margin-bottom: 48px; }
+    .scan-header h1 { font-family: var(--font-display); font-size: 2.6rem; margin-bottom: 12px; }
+    .scan-header p  { color: rgba(255,255,255,0.6); font-size: 1.05rem; line-height: 1.7; }
+
+    /* ── Upload zone ─────────────────────────────────────────── */
+    .upload-zone {
+      width: 100%; padding: 56px 32px;
+      border: 2px dashed rgba(244,166,41,0.4);
+      border-radius: var(--radius-xl);
+      text-align: center; cursor: pointer;
+      transition: all var(--transition);
+      position: relative; overflow: hidden;
+      background: rgba(255,255,255,0.03);
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--gold-400);
+      background: rgba(244,166,41,0.06);
+      transform: scale(1.01);
+    }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+    }
+    .upload-icon { font-size: 4rem; margin-bottom: 20px; }
+    .upload-zone h3 { font-size: 1.3rem; font-weight: 600; margin-bottom: 8px; }
+    .upload-zone p  { color: rgba(255,255,255,0.5); font-size: 0.9rem; }
+    .upload-tips {
+      display: flex; justify-content: center;
+      gap: 24px; margin-top: 24px; flex-wrap: wrap;
+    }
+    .upload-tip {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.8rem; color: rgba(255,255,255,0.5);
+    }
+
+    /* ── Preview ─────────────────────────────────────────────── */
+    .preview-section {
+      display: none; margin-top: 32px;
+    }
+    .preview-section.visible { display: block; animation: fadeInUp 0.4s ease; }
+    .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .preview-card { position: relative; }
+    .preview-label {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(255,255,255,0.5);
+      margin-bottom: 10px;
+    }
+    .preview-img-wrap {
+      border-radius: var(--radius-md); overflow: hidden;
+      border: 1px solid var(--glass-border);
+      background: var(--green-900);
+      aspect-ratio: 1; display: flex;
+      align-items: center; justify-content: center;
+    }
+    .preview-img-wrap img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .scan-lines {
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent 0px, transparent 8px,
+        rgba(244,166,41,0.04) 8px, rgba(244,166,41,0.04) 9px
+      );
+      pointer-events: none;
+      border-radius: var(--radius-md);
+    }
+
+    /* ── Analyse button ──────────────────────────────────────── */
+    .analyse-section {
+      margin-top: 28px; text-align: center;
+      display: none;
+    }
+    .analyse-section.visible { display: block; animation: fadeInUp 0.4s ease; }
+    .btn-analyse {
+      background: linear-gradient(135deg, var(--gold-400), var(--gold-600));
+      color: var(--green-950); font-weight: 700;
+      font-size: 1.1rem; padding: 16px 48px;
+      border-radius: var(--radius-full);
+      box-shadow: 0 4px 30px rgba(244,166,41,0.4);
+      transition: all var(--transition);
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    .btn-analyse:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 40px rgba(244,166,41,0.6);
+    }
+    .btn-analyse:disabled {
+      opacity: 0.5; cursor: not-allowed; transform: none;
+    }
+
+    /* ── Loading overlay ─────────────────────────────────────── */
+    .loading-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(7,26,14,0.92);
+      backdrop-filter: blur(10px);
+      align-items: center; justify-content: center;
+      flex-direction: column; gap: 24px;
+    }
+    .loading-overlay.visible { display: flex; }
+    .loading-text { font-size: 1.1rem; color: rgba(255,255,255,0.7); }
+    .loading-sub  { font-size: 0.85rem; color: rgba(255,255,255,0.4); }
+    .loading-steps { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+    .loading-step {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 0.9rem; color: rgba(255,255,255,0.5);
+      transition: color 0.4s;
+    }
+    .loading-step.done  { color: var(--green-300); }
+    .loading-step.active{ color: var(--gold-400); }
+    .step-icon { font-size: 1.1rem; width: 24px; text-align: center; }
+
+    /* ── Tips aside ──────────────────────────────────────────── */
+    .tips-row {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 14px; margin-top: 36px;
+    }
+    .tip-box {
+      padding: 16px; border-radius: var(--radius-md);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--glass-border);
+      text-align: center; font-size: 0.82rem;
+      color: rgba(255,255,255,0.55); line-height: 1.6;
+    }
+    .tip-box strong { color: var(--gold-400); display: block; margin-bottom: 4px; }
+
+    @media (max-width: 640px) {
+      .preview-grid { grid-template-columns: 1fr; }
+      .tips-row     { grid-template-columns: 1fr; }
+      .scan-header h1 { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animated"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">
+      <div class="logo-icon">🌿</div>
+      AyurGenX
+    </a>
+    <div class="navbar-links">
+      <a href="/">Home</a>
+      <span style="color:var(--gold-400);font-weight:600;">Scan</span>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="scan-page">
+    <div class="scan-container">
+      <div class="scan-header fade-in">
+        <div class="section-label">Step 1 of 3</div>
+        <h1>Upload Your <span class="gradient-text">Selfie</span></h1>
+        <p>Take a clear, front-facing photo in natural light.<br/>
+           Our AI removes filters, beautification, and lighting distortions automatically.</p>
+      </div>
+
+      <!-- Upload zone -->
+      <div class="glass upload-zone fade-in fade-in-d1" id="dropZone">
+        <input type="file" id="imageInput" accept="image/*" aria-label="Upload face image" />
+        <div class="upload-icon">📷</div>
+        <h3>Drop your selfie here</h3>
+        <p>or click to browse — JPG, PNG, WEBP · Max 10 MB</p>
+        <div class="upload-tips">
+          <div class="upload-tip">✅ Natural lighting</div>
+          <div class="upload-tip">✅ Face centred</div>
+          <div class="upload-tip">✅ No heavy filters</div>
+          <div class="upload-tip">✅ Clean background</div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="preview-section" id="previewSection">
+        <div class="preview-grid">
+          <div class="preview-card">
+            <div class="preview-label">Your Photo</div>
+            <div class="preview-img-wrap">
+              <img id="previewOriginal" src="" alt="Uploaded selfie" />
+            </div>
+          </div>
+          <div class="preview-card">
+            <div class="preview-label">Processing Preview</div>
+            <div class="preview-img-wrap" style="position:relative;">
+              <img id="previewProcessed" src="" alt="Processed for analysis" />
+              <div class="scan-lines"></div>
+              <div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);
+                          background:rgba(7,26,14,0.85);border-radius:20px;
+                          padding:4px 14px;font-size:0.75rem;color:var(--gold-400);
+                          white-space:nowrap;border:1px solid rgba(244,166,41,0.3);">
+                🔬 Ready for analysis
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analyse CTA -->
+      <div class="analyse-section" id="analyseSection">
+        <button class="btn-analyse" id="analyseBtn" onclick="startAnalysis()">
+          🔬 Analyse My Skin
+        </button>
+        <p style="margin-top:14px;font-size:0.82rem;color:rgba(255,255,255,0.4);">
+          Your image is processed locally and never stored.
+        </p>
+      </div>
+
+      <!-- Tips -->
+      <div class="tips-row fade-in fade-in-d3">
+        <div class="tip-box">
+          <strong>💡 Best Results</strong>
+          Use natural daylight — avoid harsh indoor lighting or flash.
+        </div>
+        <div class="tip-box">
+          <strong>🚫 Avoid</strong>
+          Heavy makeup, Snapchat filters, or very dark backgrounds.
+        </div>
+        <div class="tip-box">
+          <strong>🔒 Privacy</strong>
+          Your image is analysed in real time and never saved to our servers.
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Analysing your skin…</div>
+    <div class="loading-steps">
+      <div class="loading-step active" id="step-denoise">
+        <span class="step-icon">🔧</span> Removing noise &amp; filters
+      </div>
+      <div class="loading-step" id="step-lighting">
+        <span class="step-icon">☀️</span> Normalising lighting
+      </div>
+      <div class="loading-step" id="step-model">
+        <span class="step-icon">🤖</span> Running EfficientNet model
+      </div>
+      <div class="loading-step" id="step-biomarkers">
+        <span class="step-icon">📊</span> Extracting skin biomarkers
+      </div>
+    </div>
+    <div class="loading-sub">This takes 5–10 seconds</div>
+  </div>
+
+  <script>
+    const API = '';  // same origin
+
+    // ── File / drop handling ─────────────────────────────────────────────
+    const dropZone = document.getElementById('dropZone');
+    const imgInput = document.getElementById('imageInput');
+    let selectedFile = null;
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) handleFile(file);
+    });
+    imgInput.addEventListener('change', e => {
+      if (e.target.files[0]) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      selectedFile = file;
+      const url = URL.createObjectURL(file);
+      document.getElementById('previewOriginal').src  = url;
+      document.getElementById('previewProcessed').src = url;  // backend will process
+      document.getElementById('previewSection').classList.add('visible');
+      document.getElementById('analyseSection').classList.add('visible');
+    }
+
+    // ── Analysis ─────────────────────────────────────────────────────────
+    async function startAnalysis() {
+      if (!selectedFile) return;
+      showLoading();
+
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      try {
+        // Animate loading steps
+        await animateStep('step-denoise', 'step-lighting', 1400);
+        await animateStep('step-lighting', 'step-model', 1200);
+        await animateStep('step-model', 'step-biomarkers', 1200);
+
+        const resp = await fetch(`${API}/api/analyze`, { method: 'POST', body: formData });
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.detail || 'Analysis failed');
+        }
+        const data = await resp.json();
+        markStep('step-biomarkers');
+
+        // Store result and redirect to chat
+        sessionStorage.setItem('ayur_cv_results',   JSON.stringify(data.conditions));
+        sessionStorage.setItem('ayur_cv_extra',     JSON.stringify(data.extra_cv));
+        sessionStorage.setItem('ayur_cv_conditions',JSON.stringify(data.condition_names));
+
+        await sleep(600);
+        window.location.href = '/chat';
+
+      } catch(err) {
+        hideLoading();
+        alert('⚠️ ' + err.message + '\n\nMake sure the backend server is running.');
+      }
+    }
+
+    function animateStep(currentId, nextId, delay) {
+      return new Promise(resolve => {
+        setTimeout(() => {
+          markStep(currentId);
+          document.getElementById(nextId)?.classList.add('active');
+          resolve();
+        }, delay);
+      });
+    }
+    function markStep(id) {
+      const el = document.getElementById(id);
+      el?.classList.remove('active');
+      el?.classList.add('done');
+      const icon = el?.querySelector('.step-icon');
+      if (icon) icon.textContent = '✅';
+    }
+    function showLoading() { document.getElementById('loadingOverlay').classList.add('visible'); }
+    function hideLoading() { document.getElementById('loadingOverlay').classList.remove('visible'); }
+    function sleep(ms)     { return new Promise(r => setTimeout(r, ms)); }
+  </script>
+</body>
+</html>

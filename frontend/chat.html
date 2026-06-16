@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AyurGenX — Health Assessment</title>
+  <meta name="description" content="Answer a few smart questions. AyurGenX adapts based on your face scan to build your personalised Ayurvedic profile." />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    .chat-page {
+      flex: 1; display: flex; align-items: stretch;
+      padding-top: 72px; /* navbar height */
+    }
+
+    /* Sidebar – CV results */
+    .sidebar {
+      width: 300px; flex-shrink: 0;
+      border-right: 1px solid var(--glass-border);
+      padding: 32px 24px;
+      display: flex; flex-direction: column; gap: 20px;
+      background: rgba(255,255,255,0.02);
+      overflow-y: auto;
+    }
+    .sidebar-title {
+      font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+    .cv-result-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.05);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255,255,255,0.08);
+      animation: fadeInUp 0.4s ease both;
+    }
+    .cv-condition-name { font-size: 0.88rem; font-weight: 500; flex: 1; }
+    .cv-bar-wrap { height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 4px; }
+    .cv-bar      { height: 4px; border-radius: 2px;
+                   background: linear-gradient(90deg, var(--gold-400), var(--green-300)); }
+    .dosha-badge {
+      margin-top: 8px; padding: 16px;
+      background: rgba(244,166,41,0.08);
+      border: 1px solid rgba(244,166,41,0.25);
+      border-radius: var(--radius-md);
+    }
+    .dosha-badge .d-title { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+    .dosha-badge .d-name  { font-size: 1.2rem; font-weight: 700; color: var(--gold-400); }
+    .skin-metrics-mini {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .metric-mini {
+      padding: 10px; border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .metric-mini .ml { font-size: 0.68rem; color: rgba(255,255,255,0.45); }
+    .metric-mini .mv { font-size: 0.9rem; font-weight: 600; color: var(--green-300); margin-top: 2px; }
+
+    /* ── Chat main area ──────────────────────────────────────── */
+    .chat-main {
+      flex: 1; display: flex; flex-direction: column;
+      max-width: 680px; margin: 0 auto;
+      padding: 32px 28px;
+    }
+    .chat-progress { margin-bottom: 28px; }
+    .chat-progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 0.78rem; color: rgba(255,255,255,0.45);
+      margin-bottom: 8px;
+    }
+
+    /* Messages */
+    .messages {
+      flex: 1; display: flex; flex-direction: column;
+      gap: 20px; overflow-y: auto;
+      padding-right: 4px;
+    }
+    .message { display: flex; gap: 14px; align-items: flex-start; }
+
+    /* AI bubble */
+    .msg-ai { animation: fadeInUp 0.4s ease; }
+    .msg-ai .avatar {
+      width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--green-700), var(--gold-600));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .msg-ai .bubble {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 0 var(--radius-md) var(--radius-md) var(--radius-md);
+      padding: 16px 20px;
+      font-size: 0.98rem; line-height: 1.7; max-width: 520px;
+    }
+    .msg-ai .subtext {
+      font-size: 0.78rem; color: rgba(255,255,255,0.45); margin-top: 6px;
+    }
+
+    /* User bubble */
+    .msg-user { flex-direction: row-reverse; animation: fadeInUp 0.3s ease; }
+    .msg-user .bubble {
+      background: linear-gradient(135deg, rgba(244,166,41,0.18), rgba(45,158,85,0.18));
+      border: 1px solid rgba(244,166,41,0.2);
+      border-radius: var(--radius-md) 0 var(--radius-md) var(--radius-md);
+      padding: 14px 18px;
+      font-size: 0.95rem; line-height: 1.6; max-width: 380px;
+      color: rgba(255,255,255,0.9);
+    }
+
+    /* Typing indicator */
+    .typing-indicator { display: flex; gap: 6px; padding: 14px 20px; }
+    .typing-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gold-400); opacity: 0.5;
+      animation: typingBounce 1.2s ease-in-out infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingBounce {
+      0%,100% { transform: translateY(0);    opacity: 0.4; }
+      50%      { transform: translateY(-6px); opacity: 1;   }
+    }
+
+    /* ── Question options ────────────────────────────────────── */
+    .options-area {
+      margin-top: 24px; padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+    /* Single choice */
+    .option-list { display: flex; flex-direction: column; gap: 10px; }
+    .option-btn {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-md);
+      font-size: 0.95rem; color: #fff;
+      transition: all 0.2s; text-align: left; width: 100%;
+      cursor: pointer;
+    }
+    .option-btn:hover {
+      background: rgba(244,166,41,0.1);
+      border-color: rgba(244,166,41,0.4);
+      transform: translateX(4px);
+    }
+    .option-btn .opt-icon { font-size: 1.15rem; flex-shrink: 0; }
+    .option-btn .opt-text { flex: 1; }
+
+    /* Card select (age) */
+    .card-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+    .card-option {
+      padding: 20px 16px; text-align: center;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-md);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .card-option:hover, .card-option.selected {
+      border-color: var(--gold-400);
+      background: rgba(244,166,41,0.1);
+      transform: scale(1.03);
+    }
+    .card-option .c-icon { font-size: 2rem; margin-bottom: 8px; }
+    .card-option .c-label{ font-size: 0.95rem; font-weight: 600; }
+
+    /* Multi card */
+    .multi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .multi-option {
+      padding: 16px 10px; text-align: center;
+      background: rgba(255,255,255,0.04);
+      border: 2px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-md);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .multi-option:hover { border-color: rgba(244,166,41,0.3); background: rgba(244,166,41,0.06); }
+    .multi-option.selected {
+      border-color: var(--gold-400);
+      background: rgba(244,166,41,0.12);
+    }
+    .multi-option .m-icon  { font-size: 1.6rem; margin-bottom: 6px; }
+    .multi-option .m-label { font-size: 0.8rem; font-weight: 600; }
+
+    /* Next button */
+    .next-btn-wrap { margin-top: 16px; }
+    .next-btn {
+      padding: 12px 36px;
+      background: linear-gradient(135deg, var(--gold-400), var(--gold-600));
+      color: var(--green-950); font-weight: 700; font-size: 0.95rem;
+      border-radius: var(--radius-full);
+      box-shadow: 0 4px 20px rgba(244,166,41,0.3);
+      transition: all 0.2s;
+    }
+    .next-btn:hover { box-shadow: 0 6px 28px rgba(244,166,41,0.5); transform: translateY(-2px); }
+    .next-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+    }
+    @media (max-width: 480px) {
+      .multi-grid { grid-template-columns: repeat(2,1fr); }
+      .card-grid  { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animated"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <a href="/" class="navbar-brand">
+      <div class="logo-icon">🌿</div>
+      AyurGenX
+    </a>
+    <div class="navbar-links">
+      <a href="/scan">← Back to Scan</a>
+    </div>
+  </nav>
+
+  <div class="chat-page">
+    <!-- Sidebar: CV results -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title">Scan Results</div>
+      <div id="cvResultsList"></div>
+
+      <div class="sidebar-title" style="margin-top:8px;">Skin Metrics</div>
+      <div class="skin-metrics-mini" id="skinMetricsMini"></div>
+
+      <div class="dosha-badge" id="doshaBadge" style="display:none;">
+        <div class="d-title">Dominant Dosha</div>
+        <div class="d-name" id="doshaName">–</div>
+      </div>
+    </aside>
+
+    <!-- Chat -->
+    <div class="chat-main">
+      <div class="chat-progress">
+        <div class="chat-progress-label">
+          <span>Step 2 of 3 — Smart Assessment</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="messages" id="messages"></div>
+
+      <div class="options-area" id="optionsArea"></div>
+    </div>
+  </div>
+
+  <script>
+    /* ── State ─────────────────────────────────────────────────────────── */
+    const API = '';
+    let cvResults    = JSON.parse(sessionStorage.getItem('ayur_cv_results')   || '[]');
+    let cvExtra      = JSON.parse(sessionStorage.getItem('ayur_cv_extra')     || '{}');
+    let cvConditions = JSON.parse(sessionStorage.getItem('ayur_cv_conditions')|| '[]');
+
+    // For demo/dev when no scan was done:
+    if (!cvConditions.length) {
+      cvConditions = ['acne', 'dark spots'];
+      cvResults    = [
+        { condition:'acne',       confidence:0.62, severity:'Moderate', ayurvedic_dosha:'Pitta' },
+        { condition:'dark spots', confidence:0.38, severity:'Mild',     ayurvedic_dosha:'Pitta' },
+      ];
+      cvExtra = { glow_score:0.55, dullness:0.45, skin_tone:'Medium', redness_index:0.12, roughness:0.3 };
+    }
+
+    const STATE = {
+      answers:        {},
+      questionCount:  0,
+      primaryConcerns:[],
+      ageGroup:       '',
+      phase:          'initial',  // 'initial' → 'cv' → 'done'
+      initialIdx:     0,
+      initialQs:      [],
+    };
+
+    /* ── Boot ──────────────────────────────────────────────────────────── */
+    window.addEventListener('DOMContentLoaded', async () => {
+      renderSidebar();
+      const data = await fetch(`${API}/api/questions/initial`).then(r => r.json());
+      STATE.initialQs = data.questions;
+      showTypingThenQuestion(buildWelcomeMsg(), STATE.initialQs[0], 600);
+    });
+
+    function buildWelcomeMsg() {
+      const count = cvResults.length;
+      if (count > 0) {
+        const top = cvResults[0];
+        return `👋 Hello! I scanned your face and detected **${count} condition${count>1?'s':''}**, including **${top.condition}** (${top.severity} severity). Let me ask you a few quick questions to build your personalised Ayurvedic profile. Ready?`;
+      }
+      return `👋 Hello! Your skin looks great! Let me ask a few quick questions to personalise your Ayurvedic health profile.`;
+    }
+
+    /* ── Sidebar ───────────────────────────────────────────────────────── */
+    function renderSidebar() {
+      const list = document.getElementById('cvResultsList');
+      list.innerHTML = '';
+
+      cvResults.slice(0,5).forEach((r, i) => {
+        const pct = Math.round(r.confidence * 100);
+        const chip = r.severity === 'High' ? 'chip-red' : r.severity === 'Moderate' ? 'chip-gold' : 'chip-green';
+        list.innerHTML += `
+          <div class="cv-result-item" style="animation-delay:${i*0.08}s">
+            <div style="flex:1">
+              <div class="cv-condition-name">${r.condition}</div>
+              <div class="cv-bar-wrap"><div class="cv-bar" style="width:${pct}%"></div></div>
+              <div style="font-size:0.7rem;color:rgba(255,255,255,0.4);margin-top:4px;">${pct}% confidence</div>
+            </div>
+            <span class="chip ${chip}" style="font-size:0.68rem;">${r.severity}</span>
+          </div>`;
+      });
+
+      if (!cvResults.length) {
+        list.innerHTML = '<p style="font-size:0.85rem;color:rgba(255,255,255,0.4);">No conditions detected — your skin looks healthy! 🌿</p>';
+      }
+
+      // Skin metrics
+      const mm = document.getElementById('skinMetricsMini');
+      mm.innerHTML = `
+        <div class="metric-mini"><div class="ml">Glow</div><div class="mv">${Math.round((cvExtra.glow_score||0.5)*100)}%</div></div>
+        <div class="metric-mini"><div class="ml">Skin Tone</div><div class="mv">${cvExtra.skin_tone||'—'}</div></div>
+        <div class="metric-mini"><div class="ml">Redness</div><div class="mv">${Math.round((cvExtra.redness_index||0)*100)}%</div></div>
+        <div class="metric-mini"><div class="ml">Roughness</div><div class="mv">${Math.round((cvExtra.roughness||0.3)*100)}%</div></div>`;
+
+      // Dominant dosha
+      if (cvResults.length) {
+        const doshaTally = {};
+        cvResults.forEach(r => { doshaTally[r.ayurvedic_dosha] = (doshaTally[r.ayurvedic_dosha]||0)+1; });
+        const dominant = Object.entries(doshaTally).sort((a,b)=>b[1]-a[1])[0][0];
+        document.getElementById('doshaName').textContent = dominant;
+        document.getElementById('doshaBadge').style.display = 'block';
+        STATE.dominant_dosha = dominant;
+      }
+    }
+
+    /* ── Messaging helpers ─────────────────────────────────────────────── */
+    function addAIMsg(text) {
+      const msgs = document.getElementById('messages');
+      const div  = document.createElement('div');
+      div.className = 'message msg-ai';
+      div.innerHTML = `
+        <div class="avatar">🌿</div>
+        <div>
+          <div class="bubble">${mdBold(text)}</div>
+        </div>`;
+      msgs.appendChild(div);
+      scrollBottom();
+    }
+
+    function addUserMsg(text) {
+      const msgs = document.getElementById('messages');
+      const div  = document.createElement('div');
+      div.className = 'message msg-user';
+      div.innerHTML = `<div class="bubble">${text}</div>`;
+      msgs.appendChild(div);
+      scrollBottom();
+    }
+
+    function addTyping() {
+      const msgs = document.getElementById('messages');
+      const div  = document.createElement('div');
+      div.className = 'message msg-ai'; div.id = 'typingEl';
+      div.innerHTML = `
+        <div class="avatar">🌿</div>
+        <div class="bubble">
+          <div class="typing-indicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+          </div>
+        </div>`;
+      msgs.appendChild(div);
+      scrollBottom();
+      return div;
+    }
+
+    function removeTyping() {
+      document.getElementById('typingEl')?.remove();
+    }
+
+    function showTypingThenQuestion(aiText, question, delay = 800) {
+      const typingEl = addTyping();
+      setTimeout(() => {
+        removeTyping();
+        let finalMsg = aiText;
+        if (question) {
+          finalMsg += `<br><br>**${question.text}**`;
+          if (question.subtext) {
+             finalMsg += `<div class="subtext">${question.subtext}</div>`;
+          }
+        }
+        addAIMsg(finalMsg);
+        if (question) setTimeout(() => renderQuestion(question), 400);
+      }, delay);
+    }
+
+    function scrollBottom() {
+      const m = document.getElementById('messages');
+      m.scrollTop = m.scrollHeight;
+    }
+
+    function mdBold(text) { return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); }
+
+    /* ── Question rendering ────────────────────────────────────────────── */
+    function renderQuestion(q) {
+      const area = document.getElementById('optionsArea');
+      area.innerHTML = '';
+      updateProgress();
+
+      if (q.type === 'single_choice') {
+        const list = document.createElement('div');
+        list.className = 'option-list';
+        q.options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.className = 'option-btn'; btn.id = `opt-${opt.value}`;
+          btn.innerHTML = `
+            <span class="opt-icon">${opt.icon || '•'}</span>
+            <span class="opt-text">${opt.label}</span>`;
+          btn.onclick = () => handleSingleChoice(q, opt);
+          list.appendChild(btn);
+        });
+        area.appendChild(list);
+      }
+
+      else if (q.type === 'card_select') {
+        const grid = document.createElement('div');
+        grid.className = 'card-grid';
+        q.options.forEach(opt => {
+          const card = document.createElement('div');
+          card.className = 'card-option'; card.id = `card-${opt.value}`;
+          card.innerHTML = `<div class="c-icon">${opt.icon}</div><div class="c-label">${opt.label}</div>`;
+          card.onclick = () => handleCardSelect(q, opt, card);
+          grid.appendChild(card);
+        });
+        area.appendChild(grid);
+      }
+
+      else if (q.type === 'multi_card') {
+        const grid = document.createElement('div');
+        grid.className = 'multi-grid';
+        const selected = new Set();
+        q.options.forEach(opt => {
+          const card = document.createElement('div');
+          card.className = 'multi-option'; card.id = `multi-${opt.value}`;
+          card.innerHTML = `<div class="m-icon">${opt.icon}</div><div class="m-label">${opt.label}</div>`;
+          card.onclick = () => {
+            if (selected.has(opt.value)) { selected.delete(opt.value); card.classList.remove('selected'); }
+            else                         { selected.add(opt.value);    card.classList.add('selected');    }
+          };
+          grid.appendChild(card);
+        });
+        area.appendChild(grid);
+        const btnWrap = document.createElement('div');
+        btnWrap.className = 'next-btn-wrap';
+        const btn = document.createElement('button');
+        btn.className = 'next-btn'; btn.textContent = 'Continue →';
+        btn.onclick = () => handleMultiCard(q, selected);
+        btnWrap.appendChild(btn);
+        area.appendChild(btnWrap);
+      }
+    }
+
+    /* ── Answer handlers ───────────────────────────────────────────────── */
+    function handleSingleChoice(q, opt) {
+      document.getElementById('optionsArea').innerHTML = '';
+      addUserMsg(`${opt.icon || ''} ${opt.label}`);
+      STATE.answers[q.id] = opt.value;
+      STATE.answers['_last_answer'] = { next: opt.next };
+      STATE.questionCount++;
+      fetchNextQuestion();
+    }
+
+    function handleCardSelect(q, opt, card) {
+      document.querySelectorAll('.card-option').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      setTimeout(() => {
+        document.getElementById('optionsArea').innerHTML = '';
+        addUserMsg(`${opt.icon} ${opt.label}`);
+        STATE.answers[q.id] = opt.value;
+        STATE.answers['_last_answer'] = { next: q.next };
+        if (q.id === 'age_group') STATE.ageGroup = opt.value;
+        STATE.questionCount++;
+
+        // next initial question or start CV phase
+        STATE.initialIdx++;
+        if (STATE.initialIdx < STATE.initialQs.length) {
+          showTypingThenQuestion(
+            'Got it! 🌿 One more quick thing before we dive deeper:',
+            STATE.initialQs[STATE.initialIdx]
+          );
+        } else {
+          STATE.phase = 'cv';
+          fetchNextQuestion();
+        }
+      }, 300);
+    }
+
+    function handleMultiCard(q, selected) {
+      if (!selected.size) return;
+      const labels = [...selected].map(v => {
+        const o = q.options.find(x => x.value === v);
+        return `${o.icon} ${o.label}`;
+      });
+      document.getElementById('optionsArea').innerHTML = '';
+      addUserMsg(labels.join(', '));
+      STATE.primaryConcerns = [...selected];
+      STATE.answers[q.id] = [...selected];
+      STATE.answers['_last_answer'] = { next: null };
+      STATE.questionCount++;
+
+      STATE.initialIdx++;
+      STATE.phase = 'cv';
+      fetchNextQuestion();
+    }
+
+    /* ── API fetch ─────────────────────────────────────────────────────── */
+    async function fetchNextQuestion() {
+      const typingEl = addTyping();
+      try {
+        const resp = await fetch(`${API}/api/questions/next`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cv_conditions:    cvConditions,
+            primary_concerns: STATE.primaryConcerns,
+            answers:          STATE.answers,
+            question_count:   STATE.questionCount,
+          }),
+        });
+        const data = await resp.json();
+        removeTyping();
+
+        if (!data.question) {
+          // Assessment complete
+          await finishAssessment();
+        } else {
+          const q = data.question;
+          const intro = buildQuestionIntro(q);
+          addAIMsg(intro);
+          setTimeout(() => renderQuestion(q), 400);
+        }
+      } catch(err) {
+        removeTyping();
+        addAIMsg('⚠️ Something went wrong. Please make sure the backend is running.');
+      }
+    }
+
+    function buildQuestionIntro(q) {
+      const starters = [
+        'Thanks!',
+        'Got it!',
+        'Interesting!',
+        'Perfect.',
+        'Great!',
+      ];
+      const prefix = starters[STATE.questionCount % starters.length];
+      let msg = `${prefix} **${q.text}**`;
+      if (q.subtext) {
+        msg += `<div class="subtext">${q.subtext}</div>`;
+      }
+      return msg;
+    }
+
+    /* ── Finish ────────────────────────────────────────────────────────── */
+    async function finishAssessment() {
+      addAIMsg('✨ That\'s all I need! Generating your personalised **Ayurvedic health profile** now…');
+      updateProgress(100);
+
+      const typingEl = addTyping();
+      try {
+        const resp = await fetch(`${API}/api/summary`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cv_results:       cvResults,
+            cv_extra:         cvExtra,
+            answers:          STATE.answers,
+            primary_concerns: STATE.primaryConcerns,
+            age_group:        STATE.ageGroup,
+          }),
+        });
+        const summary = await resp.json();
+        sessionStorage.setItem('ayur_summary', JSON.stringify(summary));
+        removeTyping();
+        addAIMsg('🏵️ Your Ayurvedic profile is ready! Redirecting to your results…');
+        setTimeout(() => window.location.href = '/results', 1800);
+      } catch(err) {
+        removeTyping();
+        addAIMsg('⚠️ Could not generate summary. Please ensure the backend is running.');
+      }
+    }
+
+    function updateProgress(force) {
+      const max = 5;
+      const pct = force ?? Math.min(100, Math.round((STATE.questionCount / max) * 90));
+      document.getElementById('progressBar').style.width = pct + '%';
+      document.getElementById('progressPct').textContent = pct + '%';
+    }
+  </script>
+</body>
+</html>
